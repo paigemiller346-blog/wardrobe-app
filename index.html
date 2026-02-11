@@ -596,11 +596,6 @@
             color: var(--terracotta);
         }
 
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -810,7 +805,6 @@
 
         let savedOutfits = [];
 
-        // Compress image to reduce storage space
         function compressImage(file, maxWidth = 800, quality = 0.7) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -821,7 +815,6 @@
                         let width = img.width;
                         let height = img.height;
 
-                        // Calculate new dimensions
                         if (width > maxWidth) {
                             height = (height * maxWidth) / width;
                             width = maxWidth;
@@ -832,8 +825,6 @@
 
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
-                        // Convert to compressed base64
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
                         resolve(compressedDataUrl);
                     };
@@ -856,7 +847,6 @@
                 addButton.disabled = true;
                 
                 try {
-                    // Compress the image
                     const compressedImage = await compressImage(file);
                     selectedImage = compressedImage;
                     preview.src = selectedImage;
@@ -875,6 +865,7 @@
         function initWardrobe() {
             loadFromLocalStorage();
             renderAllCategories();
+            loadSavedOutfits();
             showPickerCategory(null, 'tops');
         }
 
@@ -906,7 +897,28 @@
                 localStorage.setItem('wardrobeItems', JSON.stringify(wardrobeItems));
             } catch (e) {
                 console.error('Error saving to localStorage:', e);
-                alert('Storage full! Try deleting some items or the quality of images will be reduced further.');
+                alert('Storage full! Try deleting some items.');
+            }
+        }
+
+        function loadSavedOutfits() {
+            try {
+                const saved = localStorage.getItem('savedOutfits');
+                if (saved) {
+                    savedOutfits = JSON.parse(saved);
+                    updateSavedOutfits();
+                }
+            } catch (e) {
+                console.error('Error loading saved outfits:', e);
+            }
+        }
+
+        function saveSavedOutfits() {
+            try {
+                localStorage.setItem('savedOutfits', JSON.stringify(savedOutfits));
+            } catch (e) {
+                console.error('Error saving outfits:', e);
+                alert('Unable to save outfit. Storage might be full.');
             }
         }
 
@@ -935,7 +947,6 @@
             saveToLocalStorage();
             renderAllCategories();
             
-            // Clear form
             document.getElementById('item-name').value = '';
             document.getElementById('item-image').value = '';
             document.getElementById('file-label').textContent = 'Choose Image';
@@ -1099,6 +1110,7 @@
             }
             
             savedOutfits.push({ ...currentOutfit, date: new Date().toLocaleDateString() });
+            saveSavedOutfits();
             updateSavedOutfits();
             alert('Outfit saved! 🎉');
         }
@@ -1130,11 +1142,13 @@
 
         function deleteSavedOutfit(event, index) {
             event.stopPropagation();
-            savedOutfits.splice(index, 1);
-            updateSavedOutfits();
+            if (confirm('Delete this saved outfit?')) {
+                savedOutfits.splice(index, 1);
+                saveSavedOutfits();
+                updateSavedOutfits();
+            }
         }
 
-        // Initialize on page load
         initWardrobe();
     </script>
 </body>
